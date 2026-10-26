@@ -1,10 +1,10 @@
 const {useState,useEffect,useMemo}=React;
 
-// Persist an explicit theme choice; use the system preference only on first visit.
+// Persist an explicit theme choice. First visit defaults to dark (matches index.html and the background artwork).
 function useTheme(){
  const [theme,setTheme]=useState(()=>{
   try{const saved=localStorage.getItem("reuse_theme");if(saved==="light"||saved==="dark")return saved;}catch(e){}
-  return window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
+  return "dark";
  });
  useEffect(()=>{
   document.documentElement.setAttribute("data-theme",theme);
@@ -27,7 +27,24 @@ const SEED={
   {id:7,title:"Lab coat (size M)",cat:"Lab Equipment",type:"rent",price:30,cond:"Good",loc:"Block 2",owner:U("Aarav Singh","98100 11111","2nd year"),status:"requested",moveOut:false,tags:"lab coat"}
  ],
  searches:{calculator:48,drafter:41,notebooks:35,books:33,"lab coat":18,lamp:12,desk:9},
- notifs:[],chats:{},reports:[]
+ notifs:[],chats:{},requests:{},reports:[]
 };
 function load(){try{const s=localStorage.getItem("reuse_v2");if(s)return JSON.parse(s)}catch(e){}return SEED}
 const money=l=>l.type==="donate"?"Free":l.type==="exchange"?"Swap":l.type==="rent"?"₹"+l.price+"/day":"₹"+l.price;
+
+// ---- Impact numbers (landing page + admin) ----
+// Savings are an ESTIMATE: for completed "sell" items we assume a new one would cost about this many times the second-hand price.
+const ASSUMED_NEW_PRICE_MULTIPLIER=2;
+function impact(db){
+ const live=db.listings.filter(l=>l.status!=="removed");
+ const done=live.filter(l=>l.status==="unavailable"||l.status==="borrowed");
+ const saved=done.filter(l=>l.type==="sell").reduce((t,l)=>t+(l.price||0)*(ASSUMED_NEW_PRICE_MULTIPLIER-1),0);
+ return {reused:done.length,listed:live.length,free:live.filter(l=>l.type==="donate").length,saved};
+}
+function ImpactStrip({s}){
+ const items=[["♻",s.reused,"Items reused"],["📦",s.listed,"Items listed"],["🎁",s.free,"Free items shared"],["₹","₹"+s.saved.toLocaleString("en-IN"),"Estimated savings"]];
+ return <div>
+  <div className="impact" role="list">{items.map(([ic,v,l])=><div className="card stat" role="listitem" key={l}><div className="stat-ic" aria-hidden="true">{ic}</div><div className="price">{v}</div><div className="mute">{l}</div></div>)}</div>
+  <p className="mute" style={{fontSize:12,marginTop:8}}>Savings are an estimate: we assume a new item costs about {ASSUMED_NEW_PRICE_MULTIPLIER}× the second-hand price.</p>
+ </div>;
+}

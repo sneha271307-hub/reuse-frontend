@@ -237,7 +237,7 @@ body {
       rgba(37, 99, 235, 0.40),
       transparent 35%
     ),
-    url("../assets/background-reuse.png");
+    url("../assets/background-reuse-rem.png");
   background-size: cover, cover, cover;
   background-position: center, center, center;
   background-repeat: no-repeat;
